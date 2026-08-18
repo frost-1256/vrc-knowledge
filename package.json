@@ -4,8 +4,7 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "predev": "node scripts/generate-categories.mjs",
-    "dev": "vitepress dev docs",
+    "dev": "node scripts/dev.mjs",
     "prebuild": "node scripts/generate-categories.mjs",
     "build": "vitepress build docs",
     "preview": "vitepress preview docs"

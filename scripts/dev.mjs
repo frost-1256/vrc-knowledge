@@ -1,63 +1,48 @@
 import { spawn, execFile } from 'node:child_process'
-import { watch } from 'node:fs'
+import { watch, statSync, utimesSync } from 'node:fs'
 import { join } from 'node:path'
 
 const docsDir = join(process.cwd(), 'docs')
+const configPath = join(docsDir, '.vitepress', 'config.mts')
 const VITEPRESS_BIN = 'node_modules/vitepress/bin/vitepress.js'
 
-let child = null
-let restarting = false
 let timer = null
 
 function generateCategories() {
-  return new Promise(resolve => {
-    execFile(process.execPath, [join(process.cwd(), 'scripts/generate-categories.mjs')], e =>
-      e ? console.error('generate-categories failed:', e) : null,
-    ).on('exit', () => resolve())
+  execFile(process.execPath, [join(process.cwd(), 'scripts/generate-categories.mjs')], e => {
+    if (e) console.error('[docs watch] generate-categories failed:', e.message)
   })
 }
 
-function spawnDev() {
-  child = spawn(process.execPath, [VITEPRESS_BIN, 'dev', 'docs'], { stdio: 'inherit' })
-  child.on('exit', code => {
-    if (!restarting && code !== 0) {
-      console.error(`vitepress exited with code ${code}; restarting in 1s...`)
-      setTimeout(spawnDev, 1000)
-    }
-  })
+function isCategoryChange(filename) {
+  if (!filename || filename.startsWith('.vitepress') || filename.startsWith('..')) return false
+  const base = filename.split('/').pop()
+  if (base.includes('.')) return false
+  try {
+    return statSync(join(docsDir, filename)).isDirectory()
+  } catch {
+    return true
+  }
 }
 
-function restart() {
-  if (restarting || !child) return
-  restarting = true
-  console.log('\n[docs watch] structure changed, regenerating + restarting dev server...')
-  const old = child
-  child = null
-  old.kill('SIGTERM')
-  old.on('exit', () => {
-    generateCategories().then(() => {
-      spawnDev()
-      restarting = false
-    })
-  })
+function touchConfig() {
+  const now = new Date()
+  try {
+    utimesSync(configPath, now, now)
+    console.log('[docs watch] category structure changed, restarting dev server...')
+  } catch (e) {
+    console.error('[docs watch] could not touch config:', e.message)
+  }
 }
 
-generateCategories().then(spawnDev)
+generateCategories()
+spawn(process.execPath, [VITEPRESS_BIN, 'dev', 'docs'], { stdio: 'inherit' })
 
 watch(docsDir, { recursive: true }, (event, filename) => {
-  if (!filename || restarting) return
-  if (filename.startsWith('.vitepress') || filename.startsWith('..')) return
-  if (!filename.endsWith('.md') || filename.endsWith('index.md')) return
-  if (event !== 'rename') return
+  if (event !== 'rename' || !isCategoryChange(filename)) return
   clearTimeout(timer)
-  timer = setTimeout(restart, 500)
-})
-
-process.on('SIGINT', () => {
-  child?.kill('SIGINT')
-  process.exit(0)
-})
-process.on('SIGTERM', () => {
-  child?.kill('SIGTERM')
-  process.exit(0)
+  timer = setTimeout(() => {
+    generateCategories()
+    setTimeout(touchConfig, 300)
+  }, 500)
 })

@@ -5,13 +5,18 @@ VRChat 関連の知見をまとめる個人用ドキュメントサイト。
 このサイトは [VitePress](https://vitepress.dev) で構築され、
 Cloudflare Workers の静的アセット機能を使ってデプロイされています。
 
-## 開発環境 (Nix Flake)
+## 開発環境 (Nix Flake + direnv)
+
+[direnv](https://direnv.net) が `.envrc` で devShell と `.env` を自動ロードします。
 
 ```sh
-nix develop            # devShell (nodejs / pnpm / wrangler / git / gh)
-pnpm install           # 依存関係のインストール (初回のみ)
-pnpm dev               # ローカル開発サーバ (http://localhost:5173)
+direnv allow          # 初回のみ
+cp .env.example .env  # 初回のみ: CF の API トークンを設定
+pnpm install          # 依存関係のインストール (初回のみ)
+pnpm dev              # ローカル開発サーバ (http://localhost:5173)
 ```
+
+direnv を使わない場合は `nix develop` で devShell に入れます。
 
 ## デプロイ
 
@@ -28,10 +33,11 @@ Cloudflare Workers へデプロイします。
 
 ### 手動デプロイ (ローカルから)
 
+`.env` の `CLOUDFLARE_API_TOKEN` を設定済みなら:
+
 ```sh
-nix develop -c wrangler login
-nix develop -c pnpm build
-nix develop -c wrangler deploy
+pnpm build
+wrangler deploy
 ```
 
 ## 記事を書く
@@ -39,6 +45,6 @@ nix develop -c wrangler deploy
 `docs/` 配下に Markdown を追加するだけです。サイドバーは
 `docs/.vitepress/config.mts` で管理しています。
 
-- 記事追加: `docs/foo.md` を作成
+- 記事追加: `docs/catXX/foo.md` のようにカテゴリフォルダに入れて作成
 - ビルド確認: `pnpm build`
 - プレビュー: `pnpm preview`

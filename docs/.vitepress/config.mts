@@ -8,14 +8,20 @@ export default defineConfig({
   themeConfig: {
     nav: [
       { text: 'Home', link: '/' },
-      { text: 'Memo', link: '/memo/' },
+      { text: 'cat01', link: '/cat01/test01' },
+      { text: 'cat02', link: '/cat02/test02' },
     ],
     sidebar: [
       {
-        text: 'Contents',
+        text: 'cat01',
         items: [
-          { text: 'Home', link: '/' },
-          { text: 'Memo', link: '/memo/' },
+          { text: 'test01', link: '/cat01/test01' },
+        ],
+      },
+      {
+        text: 'cat02',
+        items: [
+          { text: 'test02', link: '/cat02/test02' },
         ],
       },
     ],

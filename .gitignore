@@ -1,5 +1,6 @@
 node_modules/
 docs/.vitepress/dist/
 .direnv/
+.env
 result
 pnpm-debug.log*

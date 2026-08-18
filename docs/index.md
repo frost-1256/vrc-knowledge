@@ -8,7 +8,7 @@ hero:
   actions:
     - theme: brand
       text: 記事を見る
-      link: /memo/
+      link: /cat01/test01
     - theme: alt
       text: GitHub
       link: https://github.com/frost-1256/vrc-knowledge

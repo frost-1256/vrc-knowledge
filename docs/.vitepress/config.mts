@@ -1,19 +1,20 @@
 import { defineConfig } from 'vitepress'
 import { readdirSync, readFileSync } from 'node:fs'
 import { join, relative } from 'node:path'
-import { fileURLToPath } from 'node:url'
 import type { DefaultTheme } from 'vitepress'
 
-const docsDir = fileURLToPath(new URL('../..', import.meta.url))
+const docsDir = join(process.cwd(), 'docs')
 
 function pageTitle(file: string, fallback: string): string {
   const m = readFileSync(file, 'utf8').match(/^#\s+(.+)$/m)
   return m ? m[1].trim() : fallback
 }
 
-function listPages(dir: string): DefaultTheme.SidebarItem[] {
+function listPages(dir: string, includeIndex = false): DefaultTheme.SidebarItem[] {
   return readdirSync(dir, { withFileTypes: true })
-    .filter(e => e.isFile() && e.name.endsWith('.md'))
+    .filter(
+      e => e.isFile() && e.name.endsWith('.md') && (includeIndex || e.name !== 'index.md'),
+    )
     .sort((a, b) => a.name.localeCompare(b.name, 'ja'))
     .map(e => {
       const isIndex = e.name === 'index.md'
@@ -32,12 +33,12 @@ function listCategories(): DefaultTheme.SidebarItem[] {
     .sort((a, b) => a.name.localeCompare(b.name, 'ja'))
     .map(dir => ({
       text: dir.name,
-      items: listPages(join(docsDir, dir.name)),
+      items: listPages(join(docsDir, dir.name), true),
     }))
     .filter(c => c.items.length > 0)
 }
 
-const topPages = listPages(docsDir).filter(p => !p.link.endsWith('/'))
+const topPages = listPages(docsDir)
 const sidebar: DefaultTheme.SidebarItem[] = [
   ...(topPages.length > 0 ? [{ text: 'Top', items: topPages }] : []),
   ...listCategories(),

@@ -1,0 +1,6 @@
+name = "vrc-knowledge"
+compatibility_date = "2026-08-18"
+
+[assets]
+directory = "./docs/.vitepress/dist"
+not_found_handling = "404-page"

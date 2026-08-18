@@ -5,3 +5,4 @@ docs/.vitepress/dist/
 .env
 result
 pnpm-debug.log*
+docs/*/index.md

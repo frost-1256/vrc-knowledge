@@ -1,5 +1,5 @@
 import { defineConfig } from 'vitepress'
-import { readdirSync, readFileSync } from 'node:fs'
+import { readdirSync, readFileSync, existsSync } from 'node:fs'
 import { join, relative } from 'node:path'
 import type { DefaultTheme } from 'vitepress'
 
@@ -10,31 +10,32 @@ function pageTitle(file: string, fallback: string): string {
   return m ? m[1].trim() : fallback
 }
 
-function listPages(dir: string, includeIndex = false): DefaultTheme.SidebarItem[] {
+function listPages(dir: string): DefaultTheme.SidebarItem[] {
   return readdirSync(dir, { withFileTypes: true })
-    .filter(
-      e => e.isFile() && e.name.endsWith('.md') && (includeIndex || e.name !== 'index.md'),
-    )
+    .filter(e => e.isFile() && e.name.endsWith('.md') && e.name !== 'index.md')
     .sort((a, b) => a.name.localeCompare(b.name, 'ja'))
-    .map(e => {
-      const isIndex = e.name === 'index.md'
-      const link =
-        '/' + relative(docsDir, join(dir, e.name)).replace(/\.md$/, '') + (isIndex ? '/' : '')
-      return {
-        text: pageTitle(join(dir, e.name), e.name.replace(/\.md$/, '')),
-        link,
-      }
-    })
+    .map(e => ({
+      text: pageTitle(join(dir, e.name), e.name.replace(/\.md$/, '')),
+      link: '/' + relative(docsDir, join(dir, e.name)).replace(/\.md$/, ''),
+    }))
 }
 
-function listCategories(): DefaultTheme.SidebarItem[] {
+function listCategories(): (DefaultTheme.SidebarItem & { link: string })[] {
   return readdirSync(docsDir, { withFileTypes: true })
     .filter(e => e.isDirectory() && !e.name.startsWith('.'))
     .sort((a, b) => a.name.localeCompare(b.name, 'ja'))
-    .map(dir => ({
-      text: dir.name,
-      items: listPages(join(docsDir, dir.name), true),
-    }))
+    .map(dir => {
+      const dirPath = join(docsDir, dir.name)
+      const pages = listPages(dirPath)
+      const indexPath = join(dirPath, 'index.md')
+      const indexLink =
+        '/' + relative(docsDir, indexPath).replace(/\.md$/, '').replace(/\/index$/, '/')
+      return {
+        text: dir.name,
+        link: existsSync(indexPath) ? indexLink : pages[0]?.link ?? '/',
+        items: pages,
+      }
+    })
     .filter(c => c.items.length > 0)
 }
 
@@ -46,12 +47,11 @@ const sidebar: DefaultTheme.SidebarItem[] = [
 
 const nav: DefaultTheme.NavItem[] = sidebar.map(c => ({
   text: c.text,
-  link: c.items[0].link,
+  link: c.link ?? c.items[0].link,
 }))
 
 export default defineConfig({
-  title: 'VRC Knowledge',
-  description: 'VRChat 関連の知見をまとめる個人メモ',
+  title: '俺的ぶいちゃ改変備忘録',
   lastUpdated: true,
 
   themeConfig: {
